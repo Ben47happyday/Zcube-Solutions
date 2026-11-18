@@ -97,10 +97,13 @@ def naplan_static(filename):
 # separate Render service.
 # ------------------------------------------------------------------
 
+# content-encoding is deliberately NOT in this set: it's an end-to-end
+# header describing the body itself (e.g. gzip), not a connection-level
+# one, and stripping it while leaving the compressed bytes alone produced
+# garbled pages — the browser had no idea the body needed decompressing.
 _HOP_BY_HOP_HEADERS = {
     "connection", "keep-alive", "proxy-authenticate", "proxy-authorization",
     "te", "trailers", "transfer-encoding", "upgrade", "content-length",
-    "content-encoding",
 }
 
 
