@@ -1,0 +1,49 @@
+# Render Blueprint for the Matchi-Webportal (HEYMAT wholesale ordering) app.
+#
+# Deploys as its own standalone Render web service (Node/Next.js), reached
+# at https://www.zcube.com.au/solutions/matchihomeware via a reverse-proxy
+# route in the Zcube-Solutions (Naplan-Portal) Flask service — see that
+# repo's backend/app.py (matchihomeware_proxy) and render.yaml
+# (MATCHIHOMEWARE_UPSTREAM_URL, which must be set to THIS service's own
+# onrender.com URL). NEXT_PUBLIC_BASE_PATH below matches that mount path so
+# this app's routes, cookies and asset links resolve correctly through the
+# proxy.
+#
+# To use: push this repo to GitHub, then in the Render dashboard choose
+# "New > Blueprint" and point it at the repo. You'll be prompted for:
+#   - DATABASE_URL: a Postgres connection string. A free Supabase project
+#     (supabase.com) works well — this app keeps its tables in their own
+#     "matchihomeware" schema, so the same database can be reused for other
+#     things without colliding.
+#   - MS_GRAPH_* (TENANT_ID / CLIENT_ID / CLIENT_SECRET / SENDER_EMAIL):
+#     Microsoft Graph app-only credentials for an Azure AD app registration
+#     with Mail.Send permission, used to send order-notification emails
+#     from a Microsoft 365/Outlook mailbox.
+#   - NOTIFY_EMAIL: who receives those order notifications.
+# A fresh ADMIN_PASSWORD (for the /admin orders dashboard) is generated
+# automatically.
+services:
+  - type: web
+    name: matchi-webportal
+    runtime: node
+    plan: free
+    buildCommand: npm ci && npm run build
+    startCommand: npm start
+    healthCheckPath: /solutions/matchihomeware/api/health
+    envVars:
+      - key: NEXT_PUBLIC_BASE_PATH
+        value: /solutions/matchihomeware
+      - key: ADMIN_PASSWORD
+        generateValue: true
+      - key: DATABASE_URL
+        sync: false
+      - key: NOTIFY_EMAIL
+        sync: false
+      - key: MS_GRAPH_TENANT_ID
+        sync: false
+      - key: MS_GRAPH_CLIENT_ID
+        sync: false
+      - key: MS_GRAPH_CLIENT_SECRET
+        sync: false
+      - key: MS_GRAPH_SENDER_EMAIL
+        sync: false
