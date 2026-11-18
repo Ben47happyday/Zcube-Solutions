@@ -88,11 +88,13 @@ def naplan_static(filename):
 
 
 # ------------------------------------------------------------------
-# Matchi Webportal (HEYMAT wholesale ordering) — a separate Next.js app
-# deployed as its own Render service, reverse-proxied under
-# /solutions/matchihomeware/ so it shares this domain. MATCHIHOMEWARE_UPSTREAM_URL
-# is that service's own onrender.com URL (or custom domain); until it's
-# set, requests here get a 503 instead of silently failing.
+# Matchi Webportal (HEYMAT wholesale ordering) — a Next.js app that runs as
+# a second process in this same container (see start.sh), listening only
+# on an internal port. This Flask process is the only one bound to the
+# public $PORT, and reverse-proxies /solutions/matchihomeware/* to it.
+# MATCHIHOMEWARE_UPSTREAM_URL defaults to that internal address; it only
+# needs overriding if the Next.js app is ever split back out into its own
+# separate Render service.
 # ------------------------------------------------------------------
 
 _HOP_BY_HOP_HEADERS = {
@@ -103,9 +105,7 @@ _HOP_BY_HOP_HEADERS = {
 
 
 def _matchihomeware_proxy(subpath):
-    upstream = os.environ.get("MATCHIHOMEWARE_UPSTREAM_URL")
-    if not upstream:
-        return jsonify({"error": "matchihomeware upstream not configured"}), 503
+    upstream = os.environ.get("MATCHIHOMEWARE_UPSTREAM_URL", "http://localhost:3001")
 
     target = f"{upstream.rstrip('/')}/solutions/matchihomeware/{subpath}"
     if request.query_string:

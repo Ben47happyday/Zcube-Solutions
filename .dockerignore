@@ -1,0 +1,15 @@
+.git
+.claude
+**/node_modules
+**/.next
+**/__pycache__
+**/*.pyc
+.venv
+venv
+.env
+.env.*
+!.env.example
+git_token.txt
+marketing/scret.txt
+marketing/config.json
+dev.log
