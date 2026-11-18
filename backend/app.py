@@ -87,6 +87,57 @@ def naplan_static(filename):
     return send_from_directory(FRONTEND_DIR, filename)
 
 
+# ------------------------------------------------------------------
+# Matchi Webportal (HEYMAT wholesale ordering) — a separate Next.js app
+# deployed as its own Render service, reverse-proxied under
+# /solutions/matchihomeware/ so it shares this domain. MATCHIHOMEWARE_UPSTREAM_URL
+# is that service's own onrender.com URL (or custom domain); until it's
+# set, requests here get a 503 instead of silently failing.
+# ------------------------------------------------------------------
+
+_HOP_BY_HOP_HEADERS = {
+    "connection", "keep-alive", "proxy-authenticate", "proxy-authorization",
+    "te", "trailers", "transfer-encoding", "upgrade", "content-length",
+    "content-encoding",
+}
+
+
+def _matchihomeware_proxy(subpath):
+    upstream = os.environ.get("MATCHIHOMEWARE_UPSTREAM_URL")
+    if not upstream:
+        return jsonify({"error": "matchihomeware upstream not configured"}), 503
+
+    target = f"{upstream.rstrip('/')}/solutions/matchihomeware/{subpath}"
+    if request.query_string:
+        target += f"?{request.query_string.decode()}"
+
+    headers = {k: v for k, v in request.headers.items() if k.lower() not in ("host", "content-length")}
+    body = request.get_data() or None
+
+    req = urllib.request.Request(target, data=body, headers=headers, method=request.method)
+    try:
+        with urllib.request.urlopen(req, timeout=30) as resp:
+            status = resp.status
+            resp_headers = resp.getheaders()
+            resp_body = resp.read()
+    except urllib.error.HTTPError as e:
+        status = e.code
+        resp_headers = e.headers.items() if e.headers else []
+        resp_body = e.read()
+    except urllib.error.URLError:
+        return jsonify({"error": "matchihomeware upstream unreachable"}), 502
+
+    out_headers = [(k, v) for k, v in resp_headers if k.lower() not in _HOP_BY_HOP_HEADERS]
+    return resp_body, status, out_headers
+
+
+@app.route("/solutions/matchihomeware/", defaults={"subpath": ""}, methods=["GET", "POST", "PUT", "PATCH", "DELETE"])
+@app.route("/solutions/matchihomeware", defaults={"subpath": ""}, methods=["GET", "POST", "PUT", "PATCH", "DELETE"])
+@app.route("/solutions/matchihomeware/<path:subpath>", methods=["GET", "POST", "PUT", "PATCH", "DELETE"])
+def matchihomeware_proxy(subpath):
+    return _matchihomeware_proxy(subpath)
+
+
 @app.route("/healthz")
 def healthz():
     """Trivial DB round-trip for an external uptime pinger to hit. "/" is
