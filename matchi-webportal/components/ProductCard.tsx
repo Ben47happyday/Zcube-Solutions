@@ -5,6 +5,7 @@ import Link from "next/link";
 import { useState } from "react";
 import type { Product } from "@/lib/products";
 import { useCart } from "@/lib/cart-context";
+import { withBasePath } from "@/lib/basePath";
 
 export default function ProductCard({
   product,
@@ -45,7 +46,7 @@ export default function ProductCard({
       >
         <div className="relative w-24 h-24 flex-shrink-0 bg-neutral-100 rounded overflow-hidden">
           <Image
-            src={product.image}
+            src={withBasePath(product.image)}
             alt={product.name}
             fill
             sizes="96px"
@@ -82,7 +83,7 @@ export default function ProductCard({
     >
       <div className="relative aspect-square bg-neutral-100 overflow-hidden">
         <Image
-          src={product.image}
+          src={withBasePath(product.image)}
           alt={product.name}
           fill
           sizes="(max-width: 768px) 50vw, 25vw"

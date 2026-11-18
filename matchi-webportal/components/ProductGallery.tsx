@@ -2,6 +2,7 @@
 
 import Image from "next/image";
 import { useRef, useState } from "react";
+import { withBasePath } from "@/lib/basePath";
 
 export default function ProductGallery({
   images,
@@ -39,7 +40,7 @@ export default function ProductGallery({
       >
         <Image
           key={images[index]}
-          src={images[index]}
+          src={withBasePath(images[index])}
           alt={alt}
           fill
           sizes="(max-width: 768px) 100vw, 50vw"
@@ -88,7 +89,7 @@ export default function ProductGallery({
                 i === index ? "border-neutral-900" : "border-transparent"
               }`}
             >
-              <Image src={src} alt="" fill sizes="64px" className="object-contain bg-neutral-100" />
+              <Image src={withBasePath(src)} alt="" fill sizes="64px" className="object-contain bg-neutral-100" />
             </button>
           ))}
         </div>

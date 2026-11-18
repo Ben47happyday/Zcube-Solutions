@@ -3,6 +3,7 @@
 import Image from "next/image";
 import Link from "next/link";
 import { useCart } from "@/lib/cart-context";
+import { withBasePath } from "@/lib/basePath";
 
 export default function CartPage() {
   const { lines, updateQuantity, removeFromCart, totalAmount } = useCart();
@@ -34,7 +35,7 @@ export default function CartPage() {
             className="flex items-center gap-4 border border-neutral-200 rounded-lg p-3 bg-white"
           >
             <div className="relative w-16 h-16 flex-shrink-0 bg-neutral-100 rounded overflow-hidden">
-              <Image src={line.image} alt={line.name} fill sizes="64px" className="object-cover" />
+              <Image src={withBasePath(line.image)} alt={line.name} fill sizes="64px" className="object-cover" />
             </div>
             <div className="flex-1 min-w-0">
               <div className="font-medium text-sm truncate">{line.name}</div>
