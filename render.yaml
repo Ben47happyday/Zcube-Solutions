@@ -1,23 +1,33 @@
-# Render.com Blueprint — deploys just the web portal. The database is
-# deliberately NOT provisioned here: Render's free Postgres tier expires
-# 30 days after creation (14-day grace period, then the data is deleted),
-# which makes it a trap for anything meant to stay live. Instead, pair
-# this free Render web service with a free Supabase Postgres project in
-# the Sydney region (AU-hosted data, matches this app's Australian
-# audience). See README.md for the $0/month setup, including the free
-# uptime pinger needed to stop both sides going idle (Render sleeps after
-# 15 min with no traffic; Supabase pauses after 7 days with no DB query).
+# Render.com Blueprint for the Zcube Solutions monorepo — two independent
+# services sharing one GitHub repo:
+#
+#   - zcube-solutions: the Flask app (company homepage, NAPLAN Prep Hub,
+#     and the reverse proxy for Matchi Webportal). Rename this service's
+#     display name to "Zcube-Solutions" in the dashboard (Settings > Name)
+#     rather than editing `name:` below — editing the Blueprint's name
+#     after the service already exists can make Render create a second,
+#     duplicate service instead of renaming the live one.
+#   - matchi-webportal: the HEYMAT wholesale ordering Next.js app, built
+#     from the matchi-webportal/ subdirectory, reached through the Flask
+#     service's reverse proxy at /solutions/matchihomeware.
+#
+# The database is deliberately NOT provisioned here for either service:
+# Render's free Postgres tier expires 30 days after creation. Pair each
+# service with its own free Supabase Postgres project instead (see each
+# app's README), including a free uptime pinger so both the service and
+# its database stay awake (Render sleeps after 15 min idle; Supabase
+# pauses after 7 days with no DB query).
 #
 # To use: push this repo to GitHub, then in the Render dashboard choose
-# "New > Blueprint" and point it at the repo. You'll be prompted to paste
-# in DATABASE_URL (from Supabase) since it isn't set here.
+# "New > Blueprint" and point it at the repo. You'll be prompted for the
+# `sync: false` vars below for both services in one flow.
 services:
   - type: web
     name: naplan-prep-hub
     runtime: python
-    plan: free
     buildCommand: pip install -r backend/requirements.txt
     startCommand: gunicorn --chdir backend app:app --bind 0.0.0.0:$PORT
+    plan: free
     healthCheckPath: /healthz
     envVars:
       - key: FLASK_SECRET_KEY
@@ -27,4 +37,30 @@ services:
       - key: DATABASE_URL
         sync: false
       - key: MATCHIHOMEWARE_UPSTREAM_URL
+        sync: false
+
+  - type: web
+    name: matchi-webportal
+    runtime: node
+    rootDir: matchi-webportal
+    buildCommand: npm ci && npm run build
+    startCommand: npm start
+    plan: free
+    healthCheckPath: /solutions/matchihomeware/api/health
+    envVars:
+      - key: NEXT_PUBLIC_BASE_PATH
+        value: /solutions/matchihomeware
+      - key: ADMIN_PASSWORD
+        generateValue: true
+      - key: DATABASE_URL
+        sync: false
+      - key: NOTIFY_EMAIL
+        sync: false
+      - key: MS_GRAPH_TENANT_ID
+        sync: false
+      - key: MS_GRAPH_CLIENT_ID
+        sync: false
+      - key: MS_GRAPH_CLIENT_SECRET
+        sync: false
+      - key: MS_GRAPH_SENDER_EMAIL
         sync: false
